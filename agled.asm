@@ -37,7 +37,11 @@
 ;          ----------                                                 *
 ;                                                                     *
 ;**********************************************************************
-
+; fan2 up   - 0x6c 0x6e 0x36 0x00
+; fan2 down - 0x6c 0x6e 0xb6 0x00
+; fan2 led  - 0x6c 0x6e 0x42 0x00
+; fan2 mem  - 0x6c 0x6e 0x52 0x00
+;**********************************************************************
 	list      p=12f675		; list directive to define processor
 	#include <p12f675.inc>  ; processor specific variable definitions
 
@@ -147,7 +151,7 @@ send_ir
 	movlw	0x6e			; fan2f octet 2
 	movwf	ircode
 	call	send_ircode
-	movlw	0x36			; fan2f octet 3
+	movlw	0xb6			; fan2f octet 3
 	movwf	ircode
 	call	send_ircode
 	movlw	0x00			; fan2f octet 4
@@ -164,7 +168,7 @@ send_ir
 	movlw	0x6e			; fan2f octet 2
 	movwf	ircode
 	call	send_ircode
-	movlw	0x36			; fan2f octet 3
+	movlw	0xb6			; fan2f octet 3
 	movwf	ircode
 	call	send_ircode
 	movlw	0x00			; fan2f octet 4
