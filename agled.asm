@@ -28,13 +28,13 @@
 ;    Notes:                                                           *
 ;      Clock source: internal 4 mhz osc                               *
 ;                                                                     *
-;          PIC12F675 Pinout for this project                          *
-;          ----------                                                 *
-; 3V-- Vdd |1      8| GND                                             *
-;      GP5 |2      7| GP0 --> IR LED output                           *
-;      GP4 |3      6| GP1 <-- Button 1 input <-- GND                  *
-;      GP3 |4      5| GP2 <-- Button 2 input <-- GND                  *
-;          ----------                                                 *
+;      PIC12F675 Pinout for this project                              *
+;                          ----U-----                                 *
+;                3V -- Vdd |1      8| GND -- GND                      *
+;                      GP5 |2      7| GP0 --> Status LED output       *
+; GND --> Button 1 --> GP4 |3      6| GP1                             *
+;                      GP3 |4      5| GP2 --> IR LED output           *
+;                          ----------                                 *
 ;                                                                     *
 ;**********************************************************************
 ; fan2 up   - 0x6c 0x6e 0x36 0x00
@@ -55,7 +55,7 @@
 ; See data sheet for additional information on configuration word settings.
 
 
-;***** VARIABLE DEFINITIONS
+;***** VARIABLE DEFINITIONS 0x20...0x5f, 64 bytes available
 w_temp		EQU		0x20    ; variable used for context saving 
 status_temp	EQU     0x21    ; variable used for context saving
 
@@ -66,6 +66,7 @@ d4			equ		0x25	; temp counter for delay loop
 c1			equ		0x26	; temp counter for ir loop
 c2			equ		0x27	; temp counter for 8 bit loop
 ircode		equ		0x28	; one octet ir code
+
 
 ;**********************************************************************
 	ORG     0x000			; processor reset vector
@@ -98,21 +99,21 @@ main
 	bsf		STATUS, RP0		; set file register bank to 1
 	clrf	ANSEL			; disable adc on pic12f675
 	
-	movlw	b'00111110'		; set GP<5:1> as inputs, GP<0> as output
+	movlw	b'00111000'		; set GP<5:3> as inputs, GP<2:0> as outputs
 	movwf	TRISIO			;
 	
-	movlw	b'00110110'		; set weak pull-up on selected pins
+	movlw	b'00110000'		; set weak pull-up on selected pins
 	movwf	WPU				;
 	
 	movlw	b'01111111'		; enable pull-ups on inputs
 	movwf	OPTION_REG		;
 	
-	movlw	b'00110110'		; enable interrupt-on-change on selected pins
+	movlw	b'00010000'		; enable interrupt-on-change on selected pins
 	movwf	IOC				;
 
 	bcf     STATUS, RP0		; set file register bank to 0
 
-	call	delay2			; place a long delay here for stability with initial sleep
+	call	delay2			; place a long delay here to stabilze the initial sleep
 	call	delay2
 	call	delay2
 
@@ -126,18 +127,25 @@ main_loop
 	sleep					; sleep now
 							; ---------------------------
 							; resume after wake up, return from isr
-
-	btfss	GPIO, 1			; button 1 pressed
+	btfss	GPIO, 4			; button 1 pressed
 	goto	button1
 
-	btfss	GPIO, 2			; button 2 pressed
+	btfss	GPIO, 5			; button 2 pressed
 	goto	button2
 
 	call	delay2
 	goto	main_loop		; goback and sleep
 
 button1
-	call	send_ir			; send the ir command
+;	call	send_ir			; send the ir command
+	bsf		GPIO, GP0		; led on
+	call	delay5
+	bcf		GPIO, GP0		; led off
+	call	delay5
+	call	delay5
+	call	delay5
+	call	delay5
+	goto	button1
 	goto	main_loop
 button2
 	call	send_ir			; send the ir command
@@ -233,7 +241,7 @@ send_one_loop
 	return
 
 send_38kpulse				; 40khz actual (25us period)
-	movlw	b'00000001'		; gpio 1
+	movlw	b'00000100'		; gpio 2
 	movwf	GPIO			; turn on the led
 	nop
 	nop
@@ -281,6 +289,27 @@ delay4_loop
 	decfsz	d4, f
 	goto	delay4_loop
 	return
+
+delay5
+; Delay = 0.1 seconds
+; Clock frequency = 4 MHz
+; Actual delay = 0.1 seconds = 100000 cycles
+; Error = 0 %
+			;99998 cycles
+	movlw	0x1F
+	movwf	d1
+	movlw	0x4F
+	movwf	d2
+d5_0
+	decfsz	d1, f
+	goto	$+2
+	decfsz	d2, f
+	goto	d5_0
+			;2 cycles
+	goto	$+1
+	return
+
+
 
 ; initialize eeprom locations
 	ORG	0x2100
