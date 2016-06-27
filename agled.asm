@@ -137,15 +137,10 @@ main_loop
 	goto	main_loop		; goback and sleep
 
 button1
-;	call	send_ir			; send the ir command
+	call	send_ir			; send the ir command
 	bsf		GPIO, GP0		; led on
 	call	delay5
 	bcf		GPIO, GP0		; led off
-	call	delay5
-	call	delay5
-	call	delay5
-	call	delay5
-	goto	button1
 	goto	main_loop
 button2
 	call	send_ir			; send the ir command
